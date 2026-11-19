@@ -209,6 +209,18 @@ details p{margin:6px 0 0}
 .hole.dealt::after{content:"";position:absolute;right:-8px;bottom:-6px;width:16px;height:24px;border-radius:3px;background:repeating-linear-gradient(45deg,#7a1f17 0 3px,#5c1510 3px 6px);border:1px solid var(--gold);box-shadow:0 2px 0 #3a0c08}
 #playerBox.sheet{position:fixed;left:0;right:0;bottom:0;z-index:8500;max-height:72vh;overflow:auto;background:linear-gradient(#15432f,#082417);border-top:2px solid #4a3516;border-radius:18px 18px 0 0;padding:12px 16px 16px;box-shadow:0 -10px 30px rgba(0,0,0,.6)}
 #sheetClose{display:block;margin:0 0 8px auto}
+/* v74：主要游戏区域在一个画面里：左边是椭圆牌桌，右边是手牌和操作（需要时在右边滚动） */
+.app{height:100vh;height:100dvh;max-width:none;overflow:hidden;padding-block:6px 6px;gap:6px}
+.stage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.left{min-height:0;display:flex;align-items:center;justify-content:center}
+.right{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px}
+.right .table{padding:10px 10px;gap:8px;border-radius:16px}
+.oval-wrap{width:min(100%, calc((100dvh - 120px) * 1.75));max-width:100%;margin:0}
+@media (max-width:700px){
+  .app{height:auto;overflow:visible}
+  .stage{grid-template-columns:minmax(0,1fr)}
+  .right{overflow:visible}
+}
 [hidden]{display:none!important}
 /* 强制横屏：竖屏时整屏显示提示，转成横屏后才能玩 */
 #rotateHint{display:none}
@@ -229,7 +241,7 @@ details p{margin:6px 0 0}
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v73</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v74</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -242,7 +254,7 @@ details p{margin:6px 0 0}
     </div>
   </header>
 
-  <section class="table" aria-label="table">
+  <main class="stage"><div class="left">
     <div class="oval-wrap" id="ovalWrap">
       <div class="oval" id="oval">
         <div class="oval-c" id="ovalC">
@@ -252,6 +264,9 @@ details p{margin:6px 0 0}
         </div>
       </div>
     </div>
+  </div>
+  <div class="right">
+  <section class="table" aria-label="table">
     <div class="seat-title"><span data-i18n="dealer">庄家</span><b id="dStatus"></b></div>
     <div class="hand">
       <span class="hl" data-i18n="low">小墩</span>
@@ -327,6 +342,7 @@ details p{margin:6px 0 0}
     <summary data-i18n="sum">玩法说明（依据新西兰赌场规则 Division 12 · Pai Gow）</summary>
     <div data-i18n-html="rules"></div>
   </details>
+  </div></main>
 </div>
 
 <script>
