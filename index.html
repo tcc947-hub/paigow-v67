@@ -225,7 +225,7 @@ details p{margin:6px 0 0}
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v69</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v70</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -919,13 +919,42 @@ const CUT_STYLES=[
 ];
 function applyCutStyle(id){
   const st=CUT_STYLES.find(c=>c.id===id);
-  if(!st||!S.deck||S.phase!=='cut'||S.cutDone)return;
-  const stacks=[];
-  for(let k=0;k<8;k++)stacks.push(S.deck.slice(4*k,4*k+4));
-  S.deck=st.order.flatMap(i=>stacks[i]);
-  sfx.cut();
-  S.cutDone=true;S.cutPick=false;S.cutStyle=id;
-  render();
+  if(!st||!S.deck||S.phase!=='cut'||S.cutDone||S.cutScene)return;
+  S.cutScene=true;
+  playCutScene(id,()=>{
+    S.cutScene=false;
+    if(!S.deck||S.cutDone)return;
+    const stacks=[];
+    for(let k=0;k<8;k++)stacks.push(S.deck.slice(4*k,4*k+4));
+    S.deck=st.order.flatMap(i=>stacks[i]);
+    sfx.cut();
+    S.cutDone=true;S.cutPick=false;S.cutStyle=id;
+    render();
+  });
+}
+/* 切法动画：打开切牌演示（同一个页面，只播放这一种切法），播完或跳过后再发牌 */
+function playCutScene(id,done){
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:9000;background:#05100b;display:flex;flex-direction:column';
+  const fr=document.createElement('iframe');
+  fr.src='cut_anim.html?embed=1&style='+encodeURIComponent(id);
+  fr.style.cssText='flex:1;width:100%;border:0;background:#05100b';
+  fr.setAttribute('title',L('切牌动画','Cut animation'));
+  const skip=document.createElement('button');
+  skip.type='button';skip.className='btn ghost small';
+  skip.textContent=L('跳过 · Skip','Skip');
+  skip.style.cssText='position:absolute;right:12px;top:12px;z-index:1';
+  ov.append(fr,skip);document.body.append(ov);
+  let timer=null, finished=false;
+  const onMsg=e=>{ if(e.source===fr.contentWindow&&e.data&&e.data.type==='cutDone')finish(); };
+  const finish=()=>{
+    if(finished)return; finished=true;
+    window.removeEventListener('message',onMsg); clearTimeout(timer);
+    ov.remove(); done();
+  };
+  window.addEventListener('message',onMsg);
+  skip.addEventListener('click',finish);
+  timer=setTimeout(finish,60000);
 }
 function onDeckTap(i){
   if(S.phase==='cut'&&S.cutPick&&!S.cutDone){cutAt(i);return;}
