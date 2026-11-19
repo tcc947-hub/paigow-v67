@@ -192,13 +192,27 @@ function computeTrails(prev,cur){
 }
 function buildSteps(style){
   const out=[]; let s=baseState();
-  out.push({t:style.frames[0].t, s:clone(s), lift:null});
+  // 每张牌的身份：8 叠，每叠 4 张，按牌墩里的顺序（从下到上）记住每一张是哪一张真牌
+  const own={}; for(let k=0;k<8;k++) own[k]=[4*k,4*k+1,4*k+2,4*k+3];
+  const snap=()=>{ const o={}; for(const k in own) if(own[k].length) o[k]=own[k].slice(); return o; };
+  out.push({t:style.frames[0].t, s:clone(s), lift:null, own:snap()});
   for(let i=1;i<style.frames.length;i++){
     const f=style.frames[i];
-    const prev=clone(s);
+    const prev=clone(s), prevOwn=snap();
     for(const k in f.g){ s[k]=Object.assign({x:0,y:0,n:0}, s[k]||{}, f.g[k]); }
-    if(f.lift && f.lift.length) out.push({t:f.t+'（先举起）', s:clone(prev), lift:f.lift.map(String)});
-    out.push({t:f.t, s:clone(s), lift:null, trails:computeTrails(prev,s)});
+    const keys=Object.keys(s);
+    const pool=[];
+    for(const k of keys){
+      const pn=(prev[k]&&prev[k].n)||0, nn=(s[k].n)||0;
+      if(!own[k]) own[k]=[];
+      if(nn<pn) pool.push(...own[k].splice(nn, pn-nn));
+    }
+    for(const k of keys){
+      const pn=(prev[k]&&prev[k].n)||0, nn=(s[k].n)||0;
+      if(nn>pn) own[k]=(own[k]||[]).concat(pool.splice(0, nn-pn));
+    }
+    if(f.lift && f.lift.length) out.push({t:f.t+'（先举起）', s:clone(prev), lift:f.lift.map(String), own:prevOwn});
+    out.push({t:f.t, s:clone(s), lift:null, trails:computeTrails(prev,s), own:snap()});
   }
   return out;
 }
@@ -206,7 +220,6 @@ function buildSteps(style){
 let st=STYLES[0], steps=buildSteps(st), si=0, iv=null, muted=false, AC=null;
 
 function layout(step){
-  const W=board.clientWidth||360;
   const slot=Math.min(44,(BOARD-24)/8);
   const off=(BOARD-8*slot)/2;
   const lifted=new Set(step.lift||[]);
@@ -214,20 +227,23 @@ function layout(step){
   for(const k of Object.keys(step.s)){
     const v=step.s[k];
     if(!v||!v.n) continue;
-    if(v.tile){ pl.push({key:k,x:v.x,y:v.y,z:0,rot:v.rot||0}); continue; }
-    for(let j=0;j<v.n;j++) pl.push({key:k,x:v.x,y:v.y,z:j*T,rot:0});
+    const ids=(step.own&&step.own[k])||[];
+    if(v.tile){ pl.push({id:ids[0],key:k,x:v.x,y:v.y,z:0,rot:v.rot||0}); continue; }
+    for(let j=0;j<v.n;j++) pl.push({id:ids[j],key:k,x:v.x,y:v.y,z:j*T,rot:0});
   }
-  pl.forEach((p,i)=>{
-    const d=tiles[i]; if(!d) return;
+  const shown=new Set();
+  pl.forEach(p=>{
+    const d=tiles[p.id]; if(!d||p.id===undefined) return;
+    shown.add(p.id);
     const x=off+p.x*slot+(slot-TW)/2;
     const rowTop=60+p.y*130;
     const z=p.z+(lifted.has(p.key)?LIFT:0);
     d.style.display='';
     d.style.transform=`translate3d(${x}px, ${rowTop}px, ${z}px) rotateZ(${p.rot}deg)`;
     d.style.zIndex=Math.round(z+1);
+    d.classList.toggle('hot', lifted.has(p.key));
   });
-  pl.forEach((p,i)=>{ tiles[i].classList.toggle('hot', lifted.has(p.key)); });
-  for(let i=pl.length;i<32;i++) tiles[i].style.display='none';
+  for(let i=0;i<32;i++) if(!shown.has(i)) tiles[i].style.display='none';
   const tr=step.trails||[];
   trailEls.forEach((el,i)=>{
     const t=tr[i];
@@ -358,7 +374,7 @@ setStyle(STYLES[0]);
   });
 })();
 
-/* 嵌入模式：游戏用 iframe 打开时，只播放指定切法的动画，播完发消息给游戏 */
+/* 嵌入模式：游戏用 iframe 打开。游戏把真实的牌（8 叠）发过来，动画就用这些真牌 */
 (function(){
   const q=new URLSearchParams(location.search);
   if(!q.get('embed'))return;
@@ -368,7 +384,17 @@ setStyle(STYLES[0]);
   document.head.appendChild(st0);
   const s=STYLES.find(x=>x.id===q.get('style'))||STYLES[0];
   setStyle(s);
-  setTimeout(()=>{ if(!iv) autoPlay(); },400);
+  let started=false;
+  const go=()=>{ if(started)return; started=true; if(!iv) autoPlay(); };
+  window.addEventListener('message',e=>{
+    const m=e.data;
+    if(m&&m.type==='deck'&&Array.isArray(m.keys)){
+      m.keys.forEach((k,i)=>{ const img=tiles[i]&&tiles[i].querySelector('img'); if(img&&PIP_SRC[k]) img.src=PIP_SRC[k]; });
+      draw(); go();
+    }
+  });
+  setTimeout(go,1500);
+  try{parent.postMessage({type:'ready'},'*');}catch(e){}
   const check=setInterval(()=>{
     if(si>=steps.length-1){ clearInterval(check); setTimeout(()=>{ try{parent.postMessage({type:'cutDone',style:s.id},'*');}catch(e){} },900); }
   },300);

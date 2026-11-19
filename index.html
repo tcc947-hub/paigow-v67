@@ -225,7 +225,7 @@ details p{margin:6px 0 0}
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v70</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v71</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -946,7 +946,12 @@ function playCutScene(id,done){
   skip.style.cssText='position:absolute;right:12px;top:12px;z-index:1';
   ov.append(fr,skip);document.body.append(ov);
   let timer=null, finished=false;
-  const onMsg=e=>{ if(e.source===fr.contentWindow&&e.data&&e.data.type==='cutDone')finish(); };
+  const onMsg=e=>{
+    if(e.source!==fr.contentWindow||!e.data)return;
+    /* 演示页准备好后，把现在洗好的真牌（8 叠，按顺序）发过去，动画就用这些牌 */
+    if(e.data.type==='ready')fr.contentWindow.postMessage({type:'deck',keys:S.deck.map(t=>tileId(t))},'*');
+    if(e.data.type==='cutDone')finish();
+  };
   const finish=()=>{
     if(finished)return; finished=true;
     window.removeEventListener('message',onMsg); clearTimeout(timer);
