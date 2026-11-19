@@ -57,13 +57,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans SC",s
 button{font-family:inherit}
 button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
-.app{
-  min-height:100%;max-width:560px;margin:0 auto;
-  padding-block:12px 28px;
-  padding-left:max(16px, env(safe-area-inset-left,0px));
-  padding-right:max(16px, env(safe-area-inset-right,0px));
-  display:flex;flex-direction:column;gap:14px;
-}
+
 .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
 .brand{font-family:"Noto Serif SC",serif;font-weight:800;font-size:26px;color:var(--gold);letter-spacing:.2em}
 .bank{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -173,18 +167,16 @@ details p{margin:6px 0 0}
 /* v67：椭圆牌桌、7 个座位洞、中间庄家、骰子、可收起的设置面板 */
 .mp-panel{display:contents}
 #btnPanel{margin-left:4px}
-.oval-wrap{position:relative;width:100%;max-width:520px;margin:4px auto 2px;aspect-ratio:1.75/1}
 .oval{position:absolute;inset:0;border-radius:50%;background:radial-gradient(ellipse at 50% 45%,#1f6a48,#0b2c1e 78%);border:3px solid #4a3516;box-shadow:inset 0 0 40px rgba(0,0,0,.55)}
 .oval-c{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40%;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 4px;border-radius:14px;text-align:center;transition:box-shadow .15s}
-.oval-c.hot{box-shadow:0 0 0 3px var(--gold),0 0 18px rgba(227,185,93,.7)}
 .oval-c .ctitle{font-size:12px;color:var(--gold);letter-spacing:.06em}
-.hole{position:absolute;transform:translate(-50%,-50%);width:clamp(62px,21vw,84px);aspect-ratio:1.3/1;border-radius:50%;border:2px dashed var(--gold);background:rgba(0,0,0,.3);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;cursor:pointer;font-family:inherit;transition:box-shadow .15s}
+.hole{position:absolute;transform:translate(-50%,-50%);width:clamp(62px,21vw,84px);aspect-ratio:1.3/1;border-radius:50%;border:2px dashed var(--gold);background:rgba(0,0,0,.3);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;cursor:pointer;font-family:inherit;transition:box-shadow .15s;z-index:6}
 .hole b{font-size:12px;color:var(--gold);font-weight:600;white-space:nowrap}
 .hole .hstat{font-size:11px;color:var(--muted);white-space:nowrap}
 .hole.taken{border-style:solid;border-color:rgba(244,236,216,.45)}
 .hole.mine{border-style:solid;border-color:var(--ok);background:rgba(134,214,159,.16)}
 .hole.banker{border-style:solid;border-color:var(--gold);background:rgba(227,185,93,.22)}
-.hole.hot{box-shadow:0 0 0 3px var(--gold),0 0 18px rgba(227,185,93,.7)}
+.oval-c.hot,.hole.hot{box-shadow:0 0 0 3px var(--gold),0 0 18px rgba(227,185,93,.7)}
 .dice3{display:flex;gap:6px;justify-content:center;perspective:240px;height:30px;align-items:center}
 .od{width:24px;height:24px;position:relative;transform-style:preserve-3d;transition:transform 1.1s cubic-bezier(.2,.7,.2,1)}
 .od .of{position:absolute;left:0;top:0;width:24px;height:24px;background:#f7f5ee;border-radius:5px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:3px;box-sizing:border-box;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
@@ -209,19 +201,24 @@ details p{margin:6px 0 0}
 .hole.dealt::after{content:"";position:absolute;right:-8px;bottom:-6px;width:16px;height:24px;border-radius:3px;background:repeating-linear-gradient(45deg,#7a1f17 0 3px,#5c1510 3px 6px);border:1px solid var(--gold);box-shadow:0 2px 0 #3a0c08}
 #playerBox.sheet{position:fixed;left:0;right:0;bottom:0;z-index:8500;max-height:72vh;overflow:auto;background:linear-gradient(#15432f,#082417);border-top:2px solid #4a3516;border-radius:18px 18px 0 0;padding:12px 16px 16px;box-shadow:0 -10px 30px rgba(0,0,0,.6)}
 #sheetClose{display:block;margin:0 0 8px auto}
-.hole{z-index:6}
 .oval.cutting .hole{visibility:hidden}
 /* 收起时只剩一条“我的牌”把手，展开时才显示牌 */
 #playerBox.sheet.collapsed{max-height:none;padding:6px 14px 8px}
 #playerBox.sheet.collapsed > *:not(#sheetClose){display:none!important}
 #playerBox.sheet.collapsed #sheetClose{margin:0 auto}
 /* v74：主要游戏区域在一个画面里：左边是椭圆牌桌，右边是手牌和操作（需要时在右边滚动） */
-.app{height:100vh;height:100dvh;max-width:none;overflow:hidden;padding-block:6px 6px;gap:6px}
+.app{
+  height:100vh;height:100dvh;max-width:none;overflow:hidden;
+  padding-block:6px;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:6px;
+}
 .stage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
 .left{min-height:0;display:flex;align-items:center;justify-content:center}
 .right{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px}
 .right .table{padding:10px 10px;gap:8px;border-radius:16px}
-.oval-wrap{width:min(100%, calc((100dvh - 120px) * 1.75));max-width:100%;margin:0}
+.oval-wrap{position:relative;width:min(100%, calc((100dvh - 120px) * 1.75));max-width:100%;margin:0;aspect-ratio:1.75/1}
 @media (max-width:700px){
   .app{height:auto;overflow:visible}
   .stage{grid-template-columns:minmax(0,1fr)}
@@ -247,7 +244,7 @@ details p{margin:6px 0 0}
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v78</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v79</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
