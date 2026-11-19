@@ -201,6 +201,10 @@ details p{margin:6px 0 0}
 @keyframes riffleR{0%{transform:translateX(0) rotate(0)}30%{transform:translateX(30px) rotate(3deg)}70%{transform:translateX(30px) rotate(3deg)}100%{transform:translateX(0) rotate(0)}}
 .deck .tile.rifL{animation:riffleL 1.5s ease-in-out both}
 .deck .tile.rifR{animation:riffleR 1.5s ease-in-out both}
+.deck .tile.cutTop{position:relative;z-index:2;animation:cutA 1.3s ease-in-out both}
+.deck .tile.cutBot{position:relative;z-index:1;animation:cutB 1.3s ease-in-out both}
+@keyframes cutA{0%{transform:translateY(0)}30%{transform:translateY(-24px)}60%{transform:translateY(-24px)}100%{transform:translateY(var(--ya))}}
+@keyframes cutB{0%{transform:translateY(0)}30%{transform:translateY(24px)}60%{transform:translateY(24px)}100%{transform:translateY(var(--yb))}}
 [hidden]{display:none!important}
 /* 强制横屏：竖屏时整屏显示提示，转成横屏后才能玩 */
 #rotateHint{display:none}
@@ -221,7 +225,7 @@ details p{margin:6px 0 0}
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v68</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v69</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -879,10 +883,27 @@ function goCut(){
   render();
 }
 function cutAt(k){
-  S.deck=S.deck.slice(k).concat(S.deck.slice(0,k));
+  if(S.cutAnimating)return;
+  const tiles=[...document.querySelectorAll('#deckGrid .tile')];
+  const n=tiles.length;
+  const finish=()=>{
+    S.deck=S.deck.slice(k).concat(S.deck.slice(0,k));
+    S.cutDone=true;S.cutPick=false;S.cutAnimating=false;
+    render();
+  };
+  if(!n||!k){finish();return;}
+  S.cutAnimating=true;
   sfx.cut();
-  S.cutDone=true;S.cutPick=false;
-  render();
+  // 上面的一叠（前 k 张）先抬起，再移到另一端；下面的一叠向上补位
+  const rowH=(tiles[0].offsetHeight||50)+5;
+  const ya=((n-k)/8)*rowH, yb=-(k/8)*rowH;
+  tiles.forEach((t,i)=>{
+    t.classList.add(i<k?'cutTop':'cutBot');
+    t.style.setProperty('--ya',ya+'px');
+    t.style.setProperty('--yb',yb+'px');
+  });
+  for(let i=0;i<5;i++)setTimeout(()=>clack(),200+i*160);
+  setTimeout(()=>{tiles.forEach(t=>t.classList.remove('cutTop','cutBot'));finish();},1350);
 }
 /* 具名切法（附录 5，按文字说明近似）：把 8 叠牌（每叠 4 张，从左到右编号 0-7）按顺序重排，第一个为最先发的一叠。
    摆法以附录图为准；下面的顺序是按说明文字做的近似。 */
