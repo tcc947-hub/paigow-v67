@@ -197,6 +197,10 @@ details p{margin:6px 0 0}
 .od .df5{transform:rotateY(-90deg) translateZ(12px)}
 .od .df6{transform:rotateY(180deg) translateZ(12px)}
 .dmsg{font-size:11px;line-height:1.35;color:var(--ink);min-height:2.7em;max-width:100%}
+@keyframes riffleL{0%{transform:translateX(0) rotate(0)}30%{transform:translateX(-30px) rotate(-3deg)}70%{transform:translateX(-30px) rotate(-3deg)}100%{transform:translateX(0) rotate(0)}}
+@keyframes riffleR{0%{transform:translateX(0) rotate(0)}30%{transform:translateX(30px) rotate(3deg)}70%{transform:translateX(30px) rotate(3deg)}100%{transform:translateX(0) rotate(0)}}
+.deck .tile.rifL{animation:riffleL 1.5s ease-in-out both}
+.deck .tile.rifR{animation:riffleR 1.5s ease-in-out both}
 [hidden]{display:none!important}
 /* 强制横屏：竖屏时整屏显示提示，转成横屏后才能玩 */
 #rotateHint{display:none}
@@ -205,6 +209,7 @@ details p{margin:6px 0 0}
   #rotateHint .rot-icon{font-size:56px;transform:rotate(90deg)}
   #rotateHint .rot-zh{font-size:20px;font-weight:700}
   #rotateHint .rot-en{font-size:17px;opacity:.9}
+  #rotateHint button{font-size:17px;min-width:160px}
 }
 </style>
 
@@ -212,11 +217,12 @@ details p{margin:6px 0 0}
   <div class="rot-icon">📱</div>
   <div class="rot-zh">请把手机横屏后再玩</div>
   <div class="rot-en">Please turn your phone sideways to play</div>
+  <button class="btn" id="rotFull" type="button">全屏 · Fullscreen</button>
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v67</span></div>
-    <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v68</span></div>
+    <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
       <div id="mpNotice" class="mp-notice" hidden></div>
@@ -653,7 +659,7 @@ function audioCtx(){
   return AC;
 }
 /* 浏览器要求先有一次点击或按键，声音才能启用：第一次操作时就把声音打开 */
-['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{audioCtx();try{if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('landscape').catch(()=>{});}catch(e){}},{once:true,passive:true}));
+['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{audioCtx();goFull();},{once:true,passive:true}));
 let clackBuf=null;
 /* 撞击声：短促的带通噪声，力度越大越响 */
 function clack(vol){
@@ -702,6 +708,7 @@ function startShuffle(){
   S.swapSel=-1;
   S.phase='shuffle';
   render();
+  setTimeout(()=>riffleAnim(),30);
 }
 let PHYS=null;
 function pushShuffle(){
@@ -1771,6 +1778,29 @@ if(btnPanel)btnPanel.addEventListener('click',()=>{
   btnPanel.setAttribute('aria-expanded',String(!p.hidden));
   btnPanel.textContent=p.hidden?L('展开设置 · Show setup','Show setup'):L('收起设置 · Hide setup','Hide setup');
 });
+
+
+/* ===== v68：洗牌动画、全屏横屏 ===== */
+function riffleAnim(done){
+  const tiles=[...document.querySelectorAll('#deckGrid .tile')];
+  if(!tiles.length){if(done)done();return;}
+  tiles.forEach((t,i)=>{t.classList.add(i<tiles.length/2?'rifL':'rifR');t.style.animationDelay=(i%8)*35+'ms';});
+  for(let i=0;i<12;i++)setTimeout(()=>clack(),150+i*110+Math.random()*30);
+  setTimeout(()=>{tiles.forEach(t=>{t.classList.remove('rifL','rifR');t.style.animationDelay='';});if(done)done();},1900);
+}
+function lockLand(){try{if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('landscape').catch(()=>{});}catch(e){}}
+/* 全屏要在点击时申请；全屏成功后再锁横屏。iPhone 的 Safari 不支持网页全屏 */
+function goFull(){
+  const el=document.documentElement;
+  const isFull=!!(document.fullscreenElement||document.webkitFullscreenElement);
+  try{
+    const req=el.requestFullscreen||el.webkitRequestFullscreen;
+    if(!isFull&&req){const p=req.call(el);if(p&&p.then)p.then(lockLand,()=>{});else lockLand();}
+    else lockLand();
+  }catch(e){lockLand();}
+}
+const btnFull=document.getElementById('btnFull'); if(btnFull)btnFull.addEventListener('click',goFull);
+const rotFull=document.getElementById('rotFull'); if(rotFull)rotFull.addEventListener('click',goFull);
 
 $('#seatBtns').addEventListener('click',e=>{
   const b=e.target.closest('[data-seat]');
