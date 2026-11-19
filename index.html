@@ -209,6 +209,10 @@ details p{margin:6px 0 0}
 .hole.dealt::after{content:"";position:absolute;right:-8px;bottom:-6px;width:16px;height:24px;border-radius:3px;background:repeating-linear-gradient(45deg,#7a1f17 0 3px,#5c1510 3px 6px);border:1px solid var(--gold);box-shadow:0 2px 0 #3a0c08}
 #playerBox.sheet{position:fixed;left:0;right:0;bottom:0;z-index:8500;max-height:72vh;overflow:auto;background:linear-gradient(#15432f,#082417);border-top:2px solid #4a3516;border-radius:18px 18px 0 0;padding:12px 16px 16px;box-shadow:0 -10px 30px rgba(0,0,0,.6)}
 #sheetClose{display:block;margin:0 0 8px auto}
+/* 收起时只剩一条“我的牌”把手，展开时才显示牌 */
+#playerBox.sheet.collapsed{max-height:none;padding:6px 14px 8px}
+#playerBox.sheet.collapsed > *:not(#sheetClose){display:none!important}
+#playerBox.sheet.collapsed #sheetClose{margin:0 auto}
 /* v74：主要游戏区域在一个画面里：左边是椭圆牌桌，右边是手牌和操作（需要时在右边滚动） */
 .app{height:100vh;height:100dvh;max-width:none;overflow:hidden;padding-block:6px 6px;gap:6px}
 .stage{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
@@ -241,7 +245,7 @@ details p{margin:6px 0 0}
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v74</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v75</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -1569,7 +1573,7 @@ function applyDoc(raw){
   const key=(d.round||0)+':'+stage;
   const dh=(d.hands&&d.hands[K(dealer)])||{front:[],back:[],valid:true};
   if(key!==me.key){
-    me.key=key;me.settling=false;me.sheetOpen=true;
+    me.key=key;me.settling=false;me.sheetOpen=(stage==='arrange');
     S.autoAll=null;S.landed=null;S.flash='';S.swapSel=-1;
     if(stage==='arrange'){
       const deck=(d.deck||[]).map(dec);
@@ -1865,13 +1869,15 @@ function renderHoles(){
     const inMP=!!MP&&!!MP.doc;
     const dealtMe=inMP&&mpDealtMe();
     pb.classList.toggle('sheet',inMP);
-    if(sc)sc.hidden=!inMP;
-    pb.hidden=inMP?!(dealtMe&&MP.sheetOpen):false;
+    pb.classList.toggle('collapsed',inMP&&!MP.sheetOpen);
+    if(sc){sc.hidden=!inMP;sc.textContent=inMP&&MP.sheetOpen?L('收起 · Close ▼','Close ▼'):L('我的牌 · My tiles ▲','My tiles ▲');}
+    pb.hidden=inMP?!dealtMe:false;
   }
 }
 buildHoles();
+if(innerHeight<500){const mp=document.getElementById('mpPanel'),bp=document.getElementById('btnPanel');if(mp)mp.hidden=true;if(bp)bp.textContent=L('展开设置 · Show setup','Show setup');}
 const sheetClose=document.getElementById('sheetClose');
-if(sheetClose)sheetClose.addEventListener('click',()=>{if(MP){MP.sheetOpen=false;renderHoles();}});
+if(sheetClose)sheetClose.addEventListener('click',()=>{if(MP){MP.sheetOpen=!MP.sheetOpen;renderHoles();}});
 const btnPanel=document.getElementById('btnPanel');
 if(btnPanel)btnPanel.addEventListener('click',()=>{
   const p=document.getElementById('mpPanel'); p.hidden=!p.hidden;
