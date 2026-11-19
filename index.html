@@ -170,7 +170,7 @@ details p{margin:6px 0 0}
 
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v64.1 网络修复</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v64.2 网络修复+换庄</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -1456,8 +1456,10 @@ function mpNext(){
     MP.ref.update({stage:'idle',round:(d.round||0)+1,dealer:MP.seat,held:held+1,dealt:null,hands:null,res:null,deck:null}).catch(mpErr);
     return;
   }
+  /* 5.3(a)：只能由上一局参与过的闲家坐庄；5.4：逆时针交给下一个座位。没有人符合时，庄家暂留（5.6 房家坐庄尚未实现） */
   const order=orderedPlayers(MP.seat,seats);
-  const next=order.find(funds)??order[0]??MP.seat;
+  const played=pl(d);
+  const next=order.find(k=>played.includes(k)&&funds(k))??MP.seat;
   MP.ref.update({stage:'idle',round:(d.round||0)+1,dealer:next,held:1,dealt:null,hands:null,res:null,deck:null}).catch(mpErr);
 }
 /* 其他座位：只读显示，已开牌或结算后才显示牌面 */
