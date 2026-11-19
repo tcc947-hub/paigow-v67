@@ -229,7 +229,7 @@ details p{margin:6px 0 0}
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v72</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v73</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -1680,7 +1680,7 @@ function renderOthers(){
   const box=$('#others'); if(!box)return;
   const d=MP&&MP.doc;
   box.replaceChildren();
-  if(!d){box.hidden=true;return;}
+  if(!d||MP){box.hidden=true;return;}
   const seats=seatsOf(d).filter(s=>s!==MP.seat&&s!==Number(d.dealer));
   box.hidden=!seats.length;
   if(!seats.length)return;
@@ -1829,8 +1829,18 @@ function renderHoles(){
     b.classList.toggle('mine',mine);
     b.classList.toggle('banker',banker);
     const st=b.querySelector('.hstat');
-    if(st)st.textContent=mine?L('你 · You','You'):banker?L('庄 · Banker','Banker'):taken?L('有人 · Taken','Taken'):L('空位 · Empty','Empty');
     const dealtK=!!MP&&!!MP.doc&&pl(MP.doc).includes(k);
+    const who=mine?L('你','You'):banker?L('庄','Banker'):taken?L('有人','Taken'):L('空位','Empty');
+    let info='';
+    if(MP&&MP.doc&&MP.doc.stage==='result'&&(MP.doc.res||{})[K(k)]){
+      const dl=(MP.doc.res||{})[K(k)].delta||0;
+      info=(dl>0?'+':'')+dl;
+    }else if(dealtK){
+      const h=(MP.doc.hands||{})[K(k)];
+      info=h&&h.opened?L('已开牌','Opened'):L('已发牌','Dealt');
+    }
+    if(st)st.textContent=info?(who+' · '+info):who;
+    if(st)st.style.color=info&&info.startsWith('+')?'var(--ok)':(info&&info.startsWith('-')?'var(--warn)':'');
     b.classList.toggle('dealt',dealtK&&!banker);
   });
   /* 联机：自己的牌显示在底部面板里（默认打开，点自己的洞可收起/打开） */
