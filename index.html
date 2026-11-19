@@ -205,6 +205,10 @@ details p{margin:6px 0 0}
 .deck .tile.cutBot{position:relative;z-index:1;animation:cutB 1.3s ease-in-out both}
 @keyframes cutA{0%{transform:translateY(0)}30%{transform:translateY(-24px)}60%{transform:translateY(-24px)}100%{transform:translateY(var(--ya))}}
 @keyframes cutB{0%{transform:translateY(0)}30%{transform:translateY(24px)}60%{transform:translateY(24px)}100%{transform:translateY(var(--yb))}}
+/* v72：发到的牌在座位洞里显示；联机时，自己的牌在底部的面板里（点自己的洞打开/收起） */
+.hole.dealt::after{content:"";position:absolute;right:-8px;bottom:-6px;width:16px;height:24px;border-radius:3px;background:repeating-linear-gradient(45deg,#7a1f17 0 3px,#5c1510 3px 6px);border:1px solid var(--gold);box-shadow:0 2px 0 #3a0c08}
+#playerBox.sheet{position:fixed;left:0;right:0;bottom:0;z-index:8500;max-height:72vh;overflow:auto;background:linear-gradient(#15432f,#082417);border-top:2px solid #4a3516;border-radius:18px 18px 0 0;padding:12px 16px 16px;box-shadow:0 -10px 30px rgba(0,0,0,.6)}
+#sheetClose{display:block;margin:0 0 8px auto}
 [hidden]{display:none!important}
 /* 强制横屏：竖屏时整屏显示提示，转成横屏后才能玩 */
 #rotateHint{display:none}
@@ -225,7 +229,7 @@ details p{margin:6px 0 0}
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v71</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v72</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -264,6 +268,7 @@ details p{margin:6px 0 0}
     <div class="msg" id="msg" role="status" aria-live="polite"></div>
 
     <div id="playerBox">
+    <button class="btn ghost small" id="sheetClose" type="button" hidden>收起 · Close</button>
     <div class="seat-title"><span data-i18n="player">闲家（你）</span><b id="pStatus"></b></div>
     <div class="hand">
       <span class="hl" data-i18n="low">小墩</span>
@@ -1548,7 +1553,7 @@ function applyDoc(raw){
   const key=(d.round||0)+':'+stage;
   const dh=(d.hands&&d.hands[K(dealer)])||{front:[],back:[],valid:true};
   if(key!==me.key){
-    me.key=key;me.settling=false;
+    me.key=key;me.settling=false;me.sheetOpen=true;
     S.autoAll=null;S.landed=null;S.flash='';S.swapSel=-1;
     if(stage==='arrange'){
       const deck=(d.deck||[]).map(dec);
@@ -1808,6 +1813,7 @@ function buildHoles(){
   });
   oval.addEventListener('click',e=>{
     const b=e.target.closest('[data-seat]'); if(!b)return;
+    if(MP&&MP.doc&&Number(b.dataset.seat)===MP.seat&&mpDealtMe()){MP.sheetOpen=!MP.sheetOpen;renderHoles();return;}
     const sb=document.querySelector('#seatBtns [data-seat="'+b.dataset.seat+'"]');
     if(sb)sb.click();
   });
@@ -1824,9 +1830,22 @@ function renderHoles(){
     b.classList.toggle('banker',banker);
     const st=b.querySelector('.hstat');
     if(st)st.textContent=mine?L('你 · You','You'):banker?L('庄 · Banker','Banker'):taken?L('有人 · Taken','Taken'):L('空位 · Empty','Empty');
+    const dealtK=!!MP&&!!MP.doc&&pl(MP.doc).includes(k);
+    b.classList.toggle('dealt',dealtK&&!banker);
   });
+  /* 联机：自己的牌显示在底部面板里（默认打开，点自己的洞可收起/打开） */
+  const pb=document.getElementById('playerBox'), sc=document.getElementById('sheetClose');
+  if(pb){
+    const inMP=!!MP&&!!MP.doc;
+    const dealtMe=inMP&&mpDealtMe();
+    pb.classList.toggle('sheet',inMP);
+    if(sc)sc.hidden=!inMP;
+    pb.hidden=inMP?!(dealtMe&&MP.sheetOpen):false;
+  }
 }
 buildHoles();
+const sheetClose=document.getElementById('sheetClose');
+if(sheetClose)sheetClose.addEventListener('click',()=>{if(MP){MP.sheetOpen=false;renderHoles();}});
 const btnPanel=document.getElementById('btnPanel');
 if(btnPanel)btnPanel.addEventListener('click',()=>{
   const p=document.getElementById('mpPanel'); p.hidden=!p.hidden;
