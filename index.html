@@ -247,7 +247,7 @@ details p{margin:6px 0 0}
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v76</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v77</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -948,19 +948,26 @@ function applyCutStyle(id){
   const st=CUT_STYLES.find(c=>c.id===id);
   if(!st||!S.deck||S.phase!=='cut'||S.cutDone||S.cutScene)return;
   S.cutScene=true;
-  playCutScene(id,()=>{
+  const before=S.deck.slice();
+  playCutScene(id,own=>{
     S.cutScene=false;
     if(!S.deck||S.cutDone)return;
-    const stacks=[];
-    for(let k=0;k<8;k++)stacks.push(S.deck.slice(4*k,4*k+4));
-    S.deck=st.order.flatMap(i=>stacks[i]);
+    /* 优先用动画里真正的结果：每一叠的牌就是动画里那一叠（同一张牌） */
+    const ok=own&&[0,1,2,3,4,5,6,7].every(k=>Array.isArray(own[k])&&own[k].length===4);
+    if(ok){
+      S.deck=st.order.flatMap(i=>own[i].map(id=>before[id]));
+    }else{
+      const stacks=[];
+      for(let k=0;k<8;k++)stacks.push(before.slice(4*k,4*k+4));
+      S.deck=st.order.flatMap(i=>stacks[i]);
+    }
     sfx.cut();
     S.cutDone=true;S.cutPick=false;S.cutStyle=id;
     render();
   });
 }
 /* 切法动画：打开切牌演示（同一个页面，只播放这一种切法），播完或跳过后再发牌 */
-function playCutScene(id,done){
+function playCutScene(id,done){ /* done(own) 收到动画结束时每一叠牌的编号 */
   /* 切牌就在椭圆桌面上进行（找不到桌面时才全屏显示） */
   const table=document.getElementById('oval');
   const ov=document.createElement('div');
@@ -987,14 +994,15 @@ function playCutScene(id,done){
     if(e.source!==fr.contentWindow||!e.data)return;
     /* 演示页准备好后，把现在洗好的真牌（8 叠，按顺序）发过去，动画就用这些牌 */
     if(e.data.type==='ready')fr.contentWindow.postMessage({type:'deck',keys:S.deck.map(t=>tileId(t))},'*');
-    if(e.data.type==='cutDone')finish();
+    if(e.data.type==='cutDone'){result=e.data.own||null;finish();}
   };
+  let result=null;
   const finish=()=>{
     if(finished)return; finished=true;
     window.removeEventListener('message',onMsg); clearTimeout(timer);
     ov.remove();
     const t=document.getElementById('oval'); if(t)t.classList.remove('cutting');
-    done();
+    done(result);
   };
   window.addEventListener('message',onMsg);
   skip.addEventListener('click',finish);

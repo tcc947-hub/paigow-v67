@@ -399,7 +399,7 @@ setStyle(STYLES[0]);
   setTimeout(go,1500);
   try{parent.postMessage({type:'ready'},'*');}catch(e){}
   const check=setInterval(()=>{
-    if(si>=steps.length-1){ clearInterval(check); setTimeout(()=>{ try{parent.postMessage({type:'cutDone',style:s.id},'*');}catch(e){} },900); }
+    if(si>=steps.length-1){ clearInterval(check); setTimeout(()=>{ try{parent.postMessage({type:'cutDone',style:s.id,own:steps[steps.length-1].own},'*');}catch(e){} },900); }
   },300);
 })();
 </script>
