@@ -26,7 +26,7 @@
           onSnapshot:function(next,error){ return r.onSnapshot(function(s){ next({exists:s.exists, data:function(){ return s.data(); }}); }, error); }
         };
       },
-      collection:function(){ throw new Error('unused'); }
+      collection:function(n){ return fdb.collection(n); }
     };
   }
   window.claude={use:function(n){ return Promise.resolve(n==='db'?DB:null); }};
@@ -170,7 +170,7 @@ details p{margin:6px 0 0}
 
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v64.2 网络修复+换庄</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v64.3 留言板</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -1541,6 +1541,79 @@ const DBP=(async()=>{
   mpStatus(idleStatus());
   return DB;
 })();
+/* ===== 留言板：和牌局用同一个 Firebase 数据库（notes 集合）===== */
+(function notesBoard(){
+  const css=document.createElement('style');
+  css.textContent='#notesBg{position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:12px}'
+    +'#notesBox{background:#0f2a1f;color:#f4ecd8;border:1px solid rgba(244,236,216,.25);border-radius:14px;width:min(560px,100%);max-height:92dvh;display:flex;flex-direction:column;padding:14px;gap:8px;font-family:"Noto Sans SC",system-ui,sans-serif}'
+    +'#notesBox h3{margin:0;font-size:17px}'
+    +'#notesBox input,#notesBox textarea{font:inherit;background:transparent;color:inherit;border:1px solid rgba(244,236,216,.35);border-radius:10px;padding:8px 10px;width:100%;box-sizing:border-box}'
+    +'#notesBox textarea{min-height:70px;resize:vertical}'
+    +'#notesBox .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}'
+    +'#notesList{overflow:auto;flex:1;min-height:120px;display:flex;flex-direction:column;gap:8px}'
+    +'.note-i{border:1px solid rgba(244,236,216,.2);border-radius:10px;padding:8px 10px;font-size:14px}'
+    +'.note-i.done{opacity:.55}.note-m{font-size:12px;opacity:.75;margin-bottom:4px}'
+    +'.note-t{white-space:pre-wrap;overflow-wrap:anywhere}#notesMsg{font-size:13px;min-height:1.4em}';
+  document.head.append(css);
+  const btn=document.createElement('button');
+  btn.type='button';btn.className='btn ghost small';btn.id='btnNotes';
+  btn.textContent=L('留言 · Notes','Notes');
+  const bar=document.querySelector('.bank'); if(bar)bar.append(btn);
+
+  function el(tag,props,kids){ const e=document.createElement(tag); if(props)Object.assign(e,props); (kids||[]).forEach(k=>e.append(k)); return e; }
+  async function openNotes(){
+    if(document.getElementById('notesBg'))return;
+    let unsub=null;
+    const msg=el('div',{id:'notesMsg'});
+    const name=el('input',{maxLength:40,placeholder:L('名字（可不填）','Name (optional)')});
+    const text=el('textarea',{maxLength:2000,placeholder:L('玩的时候发现的问题或想法…','A problem or idea from playing…')});
+    const list=el('div',{id:'notesList'});
+    const submit=el('button',{type:'button',className:'btn small',textContent:L('提交 · Submit','Submit')});
+    const close=el('button',{type:'button',className:'btn ghost small',textContent:L('关闭 · Close','Close')});
+    const box=el('div',{id:'notesBox'},[
+      el('h3',{textContent:L('牌局留言（大家都能看到）','Game notes (everyone can see)')}),
+      name,text,
+      el('div',{className:'row'},[submit,close]),
+      msg,list
+    ]);
+    const bg=el('div',{id:'notesBg'},[box]);
+    function shut(){ if(unsub)unsub(); bg.remove(); }
+    close.addEventListener('click',shut);
+    bg.addEventListener('click',e=>{ if(e.target===bg)shut(); });
+    document.body.append(bg);
+
+    const dbNow=DB||await DBP;
+    const col=dbNow&&dbNow.collection?dbNow.collection('notes'):null;
+    if(!col){ msg.textContent=L('现在不能连接留言，请稍后再试。','Notes are unavailable right now. Please try again later.'); return; }
+    unsub=col.orderBy('createdAt','desc').limit(100).onSnapshot(snap=>{
+      list.replaceChildren();
+      if(snap.empty){ list.append(el('div',{textContent:L('还没有留言。','No notes yet.')})); return; }
+      snap.docs.forEach(d=>{
+        const x=d.data();
+        const done=!!x.done;
+        const when=x.createdAt?new Date(x.createdAt).toLocaleString():'';
+        const tg=el('button',{type:'button',className:'btn ghost small',textContent:done?L('恢复未处理','Reopen'):L('标记已处理','Mark done')});
+        tg.addEventListener('click',()=>{ col.doc(d.id).update({done:!done}).catch(()=>{ msg.textContent=L('保存失败，请再试一次。','Save failed. Try again.'); }); });
+        list.append(el('div',{className:'note-i'+(done?' done':'')},[
+          el('div',{className:'note-m',textContent:[x.name||L('匿名','Anonymous'),when].filter(Boolean).join(' · ')}),
+          el('div',{className:'note-t',textContent:x.text||''}),
+          el('div',{className:'row'},[tg])
+        ]));
+      });
+    },err=>{ msg.textContent=L('读取留言失败：','Could not load notes: ')+((err&&err.code)||''); });
+    submit.addEventListener('click',()=>{
+      const t=text.value.trim();
+      if(!t){ msg.textContent=L('请先写内容。','Please write something first.'); return; }
+      submit.disabled=true; msg.textContent=L('保存中…','Saving…');
+      col.add({name:name.value.trim(),text:t,done:false,createdAt:new Date().toISOString()})
+        .then(()=>{ text.value=''; msg.textContent=L('已保存，谢谢！','Saved. Thank you!'); })
+        .catch(()=>{ msg.textContent=L('保存失败，请再试一次。','Save failed. Try again.'); })
+        .finally(()=>{ submit.disabled=false; });
+    });
+  }
+  btn.addEventListener('click',openNotes);
+})();
+
 const hashCode=(location.hash||'').slice(1).toLowerCase();
 if(CODE_RE2.test(hashCode))$('#mpCode').value=hashCode;
 
