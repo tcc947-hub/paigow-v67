@@ -156,13 +156,6 @@ details p{margin:6px 0 0}
 .seats{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:6px 0}
 .seat-btn.on{border-color:var(--gold);color:var(--gold)}
 .seat-btn.taken{opacity:.35;text-decoration:line-through}
-.gap{display:inline-block;width:10px}
-.others{margin-top:8px}
-.other-row{display:flex;flex-direction:column;gap:4px;margin:8px 0}
-.other-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.other-row .zone{flex-wrap:nowrap;gap:6px;min-height:0}
-.other-row .tile{width:40px}
-.other-row .gap{width:14px}
 
 /* v67：椭圆牌桌、7 个座位洞、中间庄家、骰子、可收起的设置面板 */
 .mp-panel{display:contents}
@@ -244,7 +237,7 @@ details p{margin:6px 0 0}
 </div>
 <div class="app">
   <header class="top">
-    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v79</span></div>
+    <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v80</span></div>
     <div class="bank"><span data-i18n="chipsLbl">筹码</span><b id="bank">1000</b><button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button><button class="btn ghost small" id="btnFull" type="button">全屏 · Fullscreen</button></div>
     <div class="mp" id="mpBar">
       <span class="mp-st" id="mpStatus">单机模式</span>
@@ -306,7 +299,6 @@ details p{margin:6px 0 0}
       <span></span>
     </div>
     </div>
-    <div class="others" id="others" hidden></div>
   </section>
 
   <div class="bar" id="shuffleBar" hidden>
@@ -984,7 +976,7 @@ function playCutScene(id,done){ /* done(own) 收到动画结束时每一叠牌�
   const skip=document.createElement('button');
   skip.type='button';skip.className='btn ghost small';
   skip.textContent=L('跳过 · Skip','Skip');
-  skip.style.cssText='position:absolute;right:8px;bottom:8px;z-index:1';
+  skip.style.cssText='position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:1';
   ov.append(fr,skip);
   let timer=null, finished=false;
   const onMsg=e=>{
@@ -1181,7 +1173,7 @@ function render(){
   $('#poolRow').hidden=!arr;
   $('#btnLeave').hidden=!(MP&&!MP.iAmDealer&&(idle||res));
   $('#playerBox').hidden=!!(MP&&MP.iAmDealer);
-  renderOthers();seatButtons();
+  seatButtons();
 
   /* 庄家 */
   const dF=$('#dF'),dB=$('#dB');
@@ -1715,42 +1707,6 @@ function mpNext(){
   MP.ref.update({stage:'idle',round:(d.round||0)+1,dealer:next,held:1,dealt:null,hands:null,res:null,deck:null,dice:null}).catch(mpErr);
 }
 /* 其他座位：只读显示，已开牌或结算后才显示牌面 */
-function renderOthers(){
-  const box=$('#others'); if(!box)return;
-  const d=MP&&MP.doc;
-  box.replaceChildren();
-  if(!d||MP){box.hidden=true;return;}
-  const seats=seatsOf(d).filter(s=>s!==MP.seat&&s!==Number(d.dealer));
-  box.hidden=!seats.length;
-  if(!seats.length)return;
-  const h=document.createElement('div');h.className='seat-title';
-  const hs=document.createElement('span');hs.textContent=L('其他座位','Other seats');h.append(hs);
-  box.append(h);
-  for(const s of seats){
-    const hd=d.hands&&d.hands[K(s)], r=(d.res||{})[K(s)];
-    const row=document.createElement('div');row.className='other-row';
-    const lab=document.createElement('span');lab.className='hl';lab.textContent=seatName(s);
-    const zone=document.createElement('div');zone.className='zone';
-    const inR=pl(d).includes(s);
-    let status='';
-    if(!inR)status=L('本局未参与','Not in this round');
-    else if(d.stage==='result'&&r){status=r.delta>0?L('赢 +'+r.delta,'Won +'+r.delta):(r.delta<0?L('输 '+r.delta,'Lost '+r.delta):L('平手','Push'));}
-    else if(hd&&hd.opened)status=L('已开牌','Revealed');
-    else status=L('理牌中','Arranging');
-    if(inR&&hd){
-      if(d.stage==='result'||hd.opened){
-        (hd.front||[]).forEach(x=>zone.append(tileEl(dec(x),null)));
-        const gap=document.createElement('span');gap.className='gap';zone.append(gap);
-        (hd.back||[]).forEach(x=>zone.append(tileEl(dec(x),null)));
-      }else{
-        for(let i=0;i<4;i++)zone.append(tileEl(null,null,{down:true}));
-      }
-    }
-    const hv=document.createElement('span');hv.className='hv';hv.textContent=status;
-    const top=document.createElement('div');top.className='other-top';top.append(lab,hv);
-    row.append(top,zone);box.append(row);
-  }
-}
 /* 联机时的提示文字（返回 null 表示交给单机的提示逻辑） */
 function mpMsg(){
   const d=MP.doc, st=d.stage||'idle', n=pl(d).length, oc=openedCount(d);
