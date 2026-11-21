@@ -96,7 +96,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 
 .tile{
   display:flex;flex-direction:column;flex:none;
-  width:clamp(40px,12vw,52px);aspect-ratio:1/2;
+  width:clamp(28px,8.5vw,36px);aspect-ratio:1/2;
   /* 仿赌场用的黑色电木牌：表面有柔和的高光，边缘有厚度，四角略圆 */
   background:linear-gradient(176deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,0) 16%),#1b1b1b;
   border:0;border-radius:6px;padding:0;
@@ -127,7 +127,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .deck.table{display:block;position:relative;height:440px;width:100%;max-width:360px;margin:0 auto;padding:0;border-radius:14px;touch-action:none;cursor:grab;user-select:none;background:radial-gradient(ellipse at center,rgba(0,0,0,.18),rgba(0,0,0,.42));overflow:hidden}
 .deck .tile.to-p{outline:3px solid #6fd39a;outline-offset:2px}
 .deck .tile.to-d{outline:3px solid #e77b7b;outline-offset:2px}
-.stk{position:relative;width:clamp(30px,9.2vw,40px);height:calc(clamp(30px,9.2vw,40px)*2 + 12px);border-radius:6px}
+.stk{position:relative;width:clamp(20px,6.4vw,27px);height:calc(clamp(20px,6.4vw,27px)*2 + 8px);border-radius:6px}
 .stk .tile{position:absolute;left:0;top:0;width:100%}
 .stk.pickable{cursor:pointer;outline:2px dashed #e3b95d;outline-offset:3px}
 .stk.to-p{outline:3px solid #6fd39a;outline-offset:3px}
@@ -137,18 +137,18 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .mp input{width:130px;padding:8px 10px;border-radius:10px;border:1px solid rgba(244,236,216,.35);background:transparent;color:var(--ink);font-size:14px}
 .mp-st{width:100%;text-align:center;font-size:13px;opacity:.85}
 .chips{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-.chip{width:54px;height:54px;border-radius:50%;border:3px dashed var(--gold);background:#7a1f17;color:var(--gold);font-weight:600;font-size:14px;cursor:pointer;font-variant-numeric:tabular-nums}
+.chip{width:40px;height:40px;border-radius:50%;border:3px dashed var(--gold);background:#7a1f17;color:var(--gold);font-weight:600;font-size:14px;cursor:pointer;font-variant-numeric:tabular-nums}
 .chip.on{background:var(--gold);color:#2a1d05;border-style:solid}
 .chip:disabled{opacity:.35;cursor:not-allowed}
 .label-small{font-size:12px;color:var(--muted);letter-spacing:.1em}
 
 .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.btn{padding:12px 20px;border-radius:12px;border:0;background:var(--gold);color:#2a1d05;font-weight:600;font-size:16px;cursor:pointer;min-width:112px}
+.btn{padding:7px 12px;border-radius:10px;border:0;background:var(--gold);color:#2a1d05;font-weight:600;font-size:14px;cursor:pointer;min-width:84px}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid rgba(244,236,216,.35)}
-.btn.small{min-width:0;padding:4px 10px;font-size:12px}
+.btn.small{min-width:0;padding:3px 7px;font-size:11px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 .cutstyles{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:6px 0}
-.cutstyles .btn{min-width:0;padding:6px 10px;font-size:13px}
+.cutstyles .btn{min-width:0;padding:3px 7px;font-size:11px}
 .mp-notice{margin:6px 0;padding:8px 12px;border-radius:10px;font-size:15px;font-weight:700;background:#1f7a4a;color:#fff;text-align:center}
 .mp-notice.warn{background:#b4532a}
 
@@ -218,7 +218,7 @@ details p{margin:6px 0 0}
 .oval-c{z-index:9}
 /* v102：骰子大一些，切牌时更容易看见（在桌面中间） */
 .dice3{height:46px;gap:10px}
-.od,.od .of{width:34px;height:34px}
+.od,.od .of{width:26px;height:26px}
 .od .of{padding:4px}
 .od .of i{width:5px;height:5px}
 .od .df1{transform:translateZ(17px)}.od .df2{transform:rotateY(90deg) translateZ(17px)}.od .df3{transform:rotateX(90deg) translateZ(17px)}.od .df4{transform:rotateX(-90deg) translateZ(17px)}.od .df5{transform:rotateY(-90deg) translateZ(17px)}.od .df6{transform:rotateY(180deg) translateZ(17px)}
