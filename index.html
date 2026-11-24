@@ -1002,6 +1002,15 @@ function render(){
     $('#dStatus').textContent=S.dValid?'':L('倒牌','Foul');
     dr.hidden=false;
     dr.textContent=L('庄家理牌：','Dealer setup: ')+withGee(houseWay(S.dAll));
+  }else if(MP&&MP.iAmDealer&&S.phase==='arrange'&&S.dF.length){
+    /* 庄家自己的两墩（系统按 House Way 自动理好）：庄家可以看到，闲家开牌前仍然看不到 */
+    S.dF.forEach(t=>dF.append(tileEl(t)));
+    S.dB.forEach(t=>dB.append(tileEl(t)));
+    $('#dFV').textContent=handName(S.dF);
+    $('#dBV').textContent=handName(S.dB);
+    $('#dStatus').textContent=S.dValid?'':L('倒牌','Foul');
+    dr.hidden=false;
+    dr.textContent=L('你是庄家：两墩已按 House Way 自动理好','You are the dealer: your two hands were arranged automatically (House Way)');
   }else{
     [0,1].forEach(()=>dF.append(tileEl(null,null,{down:true})));
     [0,1].forEach(()=>dB.append(tileEl(null,null,{down:true})));
