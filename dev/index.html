@@ -1250,14 +1250,14 @@ function render(){
   $('#btnAuto').textContent=L('自动理牌','Auto');
   $('#btnClear').hidden=!arr||(!!MP&&(!mpDealtMe()||myOpened()));
   $('#btnClear').textContent=L('清空重理','Reset');
-  $('#btnOpen').hidden=!arr||(!!MP&&(!mpDealtMe()||myOpened()));
+  $('#btnOpen').hidden=!arr||(!!MP&&((!mpDealtMe()&&!MP.iAmDealer)||myOpened()));
   $('#btnOpen').textContent=L('开牌','Reveal');
   $('#btnOpen').disabled=!canOpen();
   $('#btnNext').hidden=!res||(!!MP&&!MP.iAmDealer);
   $('#btnNext').textContent=S.bank<=0?L('重新开始','Restart'):L('下一局','Next');
   $('#poolRow').hidden=!arr;
   $('#btnLeave').hidden=!(MP&&!MP.iAmDealer&&(idle||res));
-  $('#playerBox').hidden=!!(MP&&MP.iAmDealer);
+  $('#playerBox').hidden=!!(MP&&MP.iAmDealer&&!arr);
   seatButtons();
 
   /* 庄家 */
@@ -1524,6 +1524,7 @@ function myHand(d){return d&&d.hands&&MP?d.hands[K(MP.seat)]:null;}
 function myOpened(){const h=MP&&MP.doc&&myHand(MP.doc);return !!(h&&h.opened);}
 function mpDealtMe(){return !!(MP&&MP.doc&&pl(MP.doc).includes(MP.seat));}
 function mpOthers(){return MP&&MP.doc?seatsOf(MP.doc).filter(s=>s!==Number(MP.doc.dealer)).length:0;}
+function dealerOpened(d){const dl=Number(d&&d.dealer);return !!(d&&d.hands&&d.hands[K(dl)]&&d.hands[K(dl)].opened);}
 function allOpened(d){const p=pl(d);return p.length>0&&openedCount(d)===p.length;}
 
 /* 座位按钮：已有人的座位不能再选 */
@@ -1688,6 +1689,7 @@ function applyDoc(raw){
       S.dAll=deck.slice(4*slotOf(d,dealer),4*slotOf(d,dealer)+4);
       const h=myHand(d);
       S.pool=[];S.front=[];S.back=[];
+      if(me.iAmDealer){const dh2=(d.hands&&d.hands[K(dealer)])||{};if(dh2.opened){S.front=(dh2.front||[]).map(dec);S.back=(dh2.back||[]).map(dec);}else{S.pool=(dh2.pool||[]).map(dec);}}
       if(!me.iAmDealer&&mpDealtMe()&&h){
         if(h.opened){S.front=(h.front||[]).map(dec);S.back=(h.back||[]).map(dec);}
         else{S.pool=(h.pool||[]).map(dec);}
@@ -1714,7 +1716,7 @@ function applyDoc(raw){
   /* 庄家座位已经没人（离开或掉线）：由当前最小编号的有效座位接任 */
   if(stage==='idle'&&!aliveSeat(d,dealer)&&seatsOf(d)[0]===me.seat){me.ref.update({dealer:me.seat,held:1}).catch(mpErr);return;}
   /* 庄家：所有闲家都开牌后自动结算（放到下一拍执行，避免重入） */
-  if(stage==='arrange'&&me.iAmDealer&&!me.settling&&allOpened(d)){
+  if(stage==='arrange'&&me.iAmDealer&&!me.settling&&allOpened(d)&&dealerOpened(d)){
     me.settling=true;
     setTimeout(mpSettle,0);
   }
@@ -1744,8 +1746,8 @@ function writeDeal(faces){
   const slots={};seq.forEach((s,j)=>{slots[K(s)]=j;});
   const deck=S.deck;
   const j0=slots[K(dealer)];
-  const r=houseWay(deck.slice(4*j0,4*j0+4));
-  const hands={[K(dealer)]:{front:r.front.map(enc),back:r.back.map(enc),valid:r.valid!==false}};
+  /* v117（改）：庄家自己理牌：先给庄家一叠 4 张（pool），庄家像闲家一样分成两墩后开牌 */
+  const hands={[K(dealer)]:{pool:deck.slice(4*j0,4*j0+4).map(enc),front:[],back:[],valid:true,opened:false}};
   dealt.forEach(s=>{const j=slots[K(s)];hands[K(s)]={pool:deck.slice(4*j,4*j+4).map(enc),front:[],back:[],opened:false};});
   const body={round:d.round||0,dealer,stage:'arrange',deck:deck.map(enc),dealt,slots,dice:{id:me.diceId,faces},hands,res:{},seats:d.seats||{},seen:d.seen||{},bank:d.bank||{}};
   S.deck=null;S.swapSel=-1;S.phase='arrange';S.pool=[];S.front=[];S.back=[];
@@ -1761,7 +1763,7 @@ function mpOpen(){
 /* 庄家：所有闲家都开牌后，逐人与庄家比较，统一写入结果和筹码（只由庄家写一次） */
 function mpSettle(){
   const me=MP; if(!me||!me.iAmDealer)return;
-  const d=me.doc; if(!d||d.stage!=='arrange'||!allOpened(d)){me.settling=false;return;}
+  const d=me.doc; if(!d||d.stage!=='arrange'||!allOpened(d)||!dealerOpened(d)){me.settling=false;return;}
   const dealer=Number(d.dealer), dh=d.hands[K(dealer)];
   const dF=(dh.front||[]).map(dec), dB=(dh.back||[]).map(dec);
   const bust=dh.valid===false, sF=score(dF), sB=score(dB);
@@ -1925,7 +1927,7 @@ function placeOwnTiles(onTable,seat){
     pb.style.transform=y>55?'translate(-50%,-100%)':'translate(-50%,0)';
     pb.classList.add('ontable');
   }else{
-    if(pb.parentNode!==homeSec)homeSec.appendChild(pb);
+    const dest=(MP&&MP.doc)?document.body:homeSec; if(pb.parentNode!==dest)dest.appendChild(pb);
     pb.classList.remove('ontable');
     pb.style.left='';pb.style.top='';pb.style.transform='';
   }
@@ -1969,7 +1971,7 @@ function renderHoles(){
     pb.classList.toggle('collapsed',inMP&&!MP.sheetOpen);
     placeOwnTiles(false,MP&&MP.seat);
     if(sc){sc.hidden=!inMP;sc.textContent=inMP&&MP.sheetOpen?L('收起 · Close ▼','Close ▼'):L('我的牌 · My tiles ▲','My tiles ▲');}
-    pb.hidden=inMP?!dealtMe:false;
+    pb.hidden=inMP?!(dealtMe||(MP.iAmDealer&&MP.doc&&MP.doc.stage==='arrange')):false;
   }
 }
 buildHoles();
