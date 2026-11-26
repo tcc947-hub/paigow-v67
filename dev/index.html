@@ -1964,9 +1964,10 @@ function renderHoles(){
   if(pb){
     const inMP=!!MP&&!!MP.doc;
     const dealtMe=inMP&&mpDealtMe();
-    pb.classList.toggle('sheet',inMP&&!dealtMe);
+    /* v117（改）：联机时理牌窗口一直用底部面板（和 v64 一样），不再放到洞口前面 */
+    pb.classList.toggle('sheet',inMP);
     pb.classList.toggle('collapsed',inMP&&!MP.sheetOpen);
-    placeOwnTiles(inMP&&dealtMe,MP&&MP.seat);
+    placeOwnTiles(false,MP&&MP.seat);
     if(sc){sc.hidden=!inMP;sc.textContent=inMP&&MP.sheetOpen?L('收起 · Close ▼','Close ▼'):L('我的牌 · My tiles ▲','My tiles ▲');}
     pb.hidden=inMP?!dealtMe:false;
   }
