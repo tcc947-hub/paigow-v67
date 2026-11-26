@@ -1500,7 +1500,8 @@ const dec=x=>{const q=String(x).split('-');return {a:+q[0],b:+q[1]};};
 const K=s=>String(s);
 /* 旧手机浏览器不认识 ?? 写法，所以用这个函数代替 */
 function nn(a,b){return a==null?b:a;}
-function mpStatus(t){const el=$('#mpStatus');if(el)el.textContent=t;}
+/* v117（改）：状态文字在顶部是隐藏的，所以同时用提示条显示出来（比如“请先输入牌桌代码”），否则点座位没反应 */
+function mpStatus(t){const el=$('#mpStatus');if(el)el.textContent=t; if(t)showNotice(t,false);}
 function mpErr(err){mpStatus(L('同步失败：','Sync failed: ')+((err&&err.code)||L('未知','unknown'))+L('。请确认你有“参与者”或更高的权限，并用 Claude 里的链接打开','. Make sure you have Participant access or higher, and open the link from Claude'));}
 const seatName=k=>L('座位 '+k,'Seat '+k);
 /* 座位有效：有人且最近 2 分钟内有心跳（关掉页面的人，座位会自动释放） */
@@ -1593,6 +1594,7 @@ window.addEventListener('online',()=>{ if(MP)showNotice(L(`座位 ${MP.seat} 网
 
 async function mpJoin(k){
   const c=($('#mpCode').value||'').trim().toLowerCase();
+  if(!c){mpStatus(L('请先在上方输入牌桌代码（3 到 20 位字母或数字），再点座位','Enter a table code at the top first (3 to 20 letters or numbers), then tap a seat'));const ci=$('#mpCode');if(ci)ci.focus();return;}
   if(!CODE_RE2.test(c)){mpStatus(L('牌桌代码只能用字母和数字，3 到 20 位','Table code: letters and numbers only, 3 to 20 characters'));return;}
   if(!SEATS.includes(k)){mpStatus(L('没有这个座位','No such seat'));return;}
   if(MP&&MP.seat===k)return;
