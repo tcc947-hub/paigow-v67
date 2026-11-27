@@ -1984,13 +1984,13 @@ const drawerTog=document.getElementById('drawerTog');
 if(drawerTog)drawerTog.addEventListener('click',()=>{
   const r=document.getElementById('rightPane'); const shut=r.classList.toggle('shut');
   drawerTog.setAttribute('aria-expanded',String(!shut));
-  drawerTog.textContent=shut?L('展开操作 · Show actions','Show actions'):L('收起操作 · Hide actions','Hide actions');
+  drawerTog.textContent=shut?L('展开操作','Show actions'):L('收起操作','Hide actions');
 });
 const btnPanel=document.getElementById('btnPanel');
 if(btnPanel)btnPanel.addEventListener('click',()=>{
   const p=document.getElementById('mpPanel'); p.hidden=!p.hidden;
   btnPanel.setAttribute('aria-expanded',String(!p.hidden));
-  btnPanel.textContent=p.hidden?L('展开设置 · Show setup','Show setup'):L('收起设置 · Hide setup','Hide setup');
+  btnPanel.textContent=p.hidden?L('展开设置','Show setup'):L('收起设置','Hide setup');
 });
 
 
