@@ -1972,7 +1972,7 @@ function renderHoles(){
     /* v117（改）：庄家自己的理牌区标题写“庄家（你）”，闲家写“闲家（你）” */
     const ptl=pb.querySelector('.seat-title span'); if(ptl)ptl.textContent=(inMP&&MP.iAmDealer)?L('庄家（你）','Dealer (you)'):L('闲家（你）','Player (you)');
     placeOwnTiles(false,MP&&MP.seat);
-    if(sc){sc.hidden=!inMP;sc.textContent=inMP&&MP.sheetOpen?L('收起 · Close ▼','Close ▼'):L('我的牌 · My tiles ▲','My tiles ▲');}
+    if(sc){sc.hidden=!inMP;sc.textContent=inMP&&MP.sheetOpen?L('收起 ▼','Close ▼'):L('我的牌 ▲','My tiles ▲');}
     pb.hidden=inMP?!(dealtMe||(MP.iAmDealer&&MP.doc&&MP.doc.stage==='arrange')):false;
   }
 }
