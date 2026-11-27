@@ -993,6 +993,8 @@ function applyCutStyle(id){
   if(!st||!S.deck||S.phase!=='cut'||S.cutDone||S.cutScene)return;
   S.cutScene=true;
   const before=S.deck.slice();
+  /* 联机：庄家把切牌的方式和切之前的牌写进牌桌，闲家端就能看到同样的切牌动画 */
+  if(MP&&MP.iAmDealer&&MP.ref){const cid=Date.now().toString(36)+Math.random().toString(36).slice(2,6);MP.cutId=cid;try{MP.ref.update({cut:{id:cid,style:id,deck:before.map(enc)}}).catch(()=>{});}catch(e){}}
   playCutScene(id,own=>{
     S.cutScene=false;
     if(!S.deck||S.cutDone)return;
@@ -1019,7 +1021,7 @@ function clearCutOverlay(){
   const t=document.getElementById('oval'); if(t){t.classList.remove('cutting');t.classList.remove('frozen');}
   const rp=document.getElementById('rightPane'); if(rp)rp.classList.remove('cutHide');
 }
-function playCutScene(id,done){ /* done(own) 收到动画结束时每一叠牌的编号 */
+function playCutScene(id,done,deckArr){ /* done(own) 收到动画结束时每一叠牌的编号；deckArr 为闲家端用的牌 */
   /* 切牌就在椭圆桌面上进行（找不到桌面时才全屏显示） */
   const table=document.getElementById('oval');
   clearCutOverlay();
@@ -1049,7 +1051,7 @@ function playCutScene(id,done){ /* done(own) 收到动画结束时每一叠牌�
     if(e.source!==fr.contentWindow||!e.data)return;
     /* 演示页准备好后，把现在洗好的真牌（8 叠，按顺序）发过去，动画就用这些牌 */
     if(e.data.type==='ready'){
-      fr.contentWindow.postMessage({type:'deck',keys:S.deck.map(t=>tileId(t))},'*');
+      fr.contentWindow.postMessage({type:'deck',keys:(deckArr||S.deck).map(t=>tileId(t))},'*');
       /* v92：每一批牌的接收位置：从骰子点数算出的开始位置起，依次是 RING 上的座位洞（0 为中间庄家） */
       const start=((window.LAST_TOTAL||3)-1)%8, recv=[];
       for(let i=0;i<8;i++){
@@ -1686,6 +1688,11 @@ function applyDoc(raw){
   S.bank=nn(bank[K(me.iAmDealer?dealer:me.seat)],1000);
   const stage=d.stage||'idle';
   if(d.dice&&d.dice.id&&me.diceId!==d.dice.id){me.diceId=d.dice.id;playDice(d.dice.faces,null);}
+  /* 闲家也看到切牌动画：第一次收到时只记下编号，之后每出现一次新的切牌就播放一次 */
+  if(d.cut&&d.cut.id){
+    if(me.cutId===undefined){me.cutId=d.cut.id;}
+    else if(me.cutId!==d.cut.id){me.cutId=d.cut.id; if(!me.iAmDealer&&d.cut.deck&&d.cut.style){try{playCutScene(d.cut.style,function(){},d.cut.deck.map(dec));}catch(e){}}}
+  }
   const key=(d.round||0)+':'+stage;
   const dh=(d.hands&&d.hands[K(dealer)])||{front:[],back:[],valid:true};
   if(key!==me.key){
