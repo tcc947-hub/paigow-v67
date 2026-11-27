@@ -1149,7 +1149,8 @@ function settle(){
   S.fw=dealerBust||score(S.front)>score(S.dF);
   S.bw=dealerBust||score(S.back)>score(S.dB);
   S.delta=0;
-  if(S.fw&&S.bw)S.delta=Math.floor(S.bet*0.95);
+  /* v117（改）：佣金不进位：佣金 = 下注的 5% 向下取整，赢的钱 = 下注 - 佣金 */
+  if(S.fw&&S.bw)S.delta=S.bet-Math.floor(S.bet*0.05);
   else if(!S.fw&&!S.bw)S.delta=-S.bet;
   S.bank+=S.delta;
   S.phase='result';
@@ -1776,7 +1777,8 @@ function mpSettle(){
     const fw=bust||score((h.front||[]).map(dec))>sF;
     const bw=bust||score((h.back||[]).map(dec))>sB;
     const cur=nn(bank[K(s)],1000), bet=Math.min(MP_BET,cur);
-    const delta=fw&&bw?Math.floor(bet*0.95):(!fw&&!bw?-bet:0);
+    /* v117（改）：佣金不进位 */
+    const delta=fw&&bw?bet-Math.floor(bet*0.05):(!fw&&!bw?-bet:0);
     bank[K(s)]=cur+delta;if(delta<0)lossSum+=bet;else if(delta>0)winSum+=delta;
     res[K(s)]={fw,bw,delta};
   }
