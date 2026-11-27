@@ -289,6 +289,7 @@ details p{margin:6px 0 0}
   <header class="top">
     <div class="brand"><span data-i18n="brand">牌九</span> <span style="font-size:12px;font-weight:400;opacity:.75;letter-spacing:.5px">v117</span></div>
     <input id="mpCode" maxlength="20" placeholder="牌桌代码 / Table code" autocomplete="off">
+    <input id="pName" maxlength="12" placeholder="名字 / Name" autocomplete="off" style="width:84px;flex:0 0 auto;padding:4px 6px;font-size:12px">
     <button class="btn ghost small" id="btnSound" type="button">声音：开</button><button class="btn ghost small" id="btnLang" type="button">English</button>
     <div class="bank" hidden><b id="bank">1000</b></div>
     <div class="mp" id="mpBar">
@@ -1598,6 +1599,9 @@ window.addEventListener('online',()=>{ if(MP)showNotice(L(`座位 ${MP.seat} 网
 
 async function mpJoin(k){
   const c=($('#mpCode').value||'').trim().toLowerCase();
+  const nm=(($('#pName')&&$('#pName').value)||'').trim();
+  if(!nm){mpStatus(L('请先输入名字（筹码跟着名字保存）','Enter a name first (your chips are saved under your name)'));const ni=$('#pName');if(ni)ni.focus();return;}
+  try{localStorage.setItem('pg_name',nm);}catch(e){}
   if(!c){mpStatus(L('请先在上方输入牌桌代码（3 到 20 位字母或数字），再点座位','Enter a table code at the top first (3 to 20 letters or numbers), then tap a seat'));const ci=$('#mpCode');if(ci)ci.focus();return;}
   if(!CODE_RE2.test(c)){mpStatus(L('牌桌代码只能用字母和数字，3 到 20 位','Table code: letters and numbers only, 3 to 20 characters'));return;}
   if(!SEATS.includes(k)){mpStatus(L('没有这个座位','No such seat'));return;}
@@ -1612,7 +1616,9 @@ async function mpJoin(k){
     mpLeave(true);
   }
   if(MP&&MP.unsub)MP.unsub();
-  const me={code:c,seat:k,ref:DB.doc('tables/'+c),doc:null,key:'',iAmDealer:false,dealer:null,joinPending:true,settling:false,unsub:null};
+  /* 筹码按名字保存：先读这个名字的筹码 */
+  let pBank=1000; try{const pd=await DB.collection('players').doc(pidOf(nm)).get(); if(pd&&pd.exists&&pd.data()&&typeof pd.data().bank==='number')pBank=pd.data().bank;}catch(e){}
+  const me={code:c,seat:k,name:nm,pBank,ref:DB.doc('tables/'+c),doc:null,key:'',iAmDealer:false,dealer:null,joinPending:true,settling:false,unsub:null};
   MP=me;
   try{history.replaceState(null,'','#'+c);}catch(e){}
   mpStatus(L('同步中…','Syncing…'));
@@ -1643,7 +1649,7 @@ function applyDoc(raw){
   if(me.joinPending){
     me.joinPending=false;
     if(!raw){
-      me.ref.set({round:0,dealer:me.seat,stage:'idle',seats:{[K(me.seat)]:true},seen:{[K(me.seat)]:Date.now()},bank:{[K(me.seat)]:1000},deck:null,dealt:null,hands:null,res:null}).catch(mpErr);
+      me.ref.set({round:0,dealer:me.seat,stage:'idle',seats:{[K(me.seat)]:true},names:{[K(me.seat)]:me.name},seen:{[K(me.seat)]:Date.now()},bank:{[K(me.seat)]:me.pBank},deck:null,dealt:null,hands:null,res:null}).catch(mpErr);
       try{localStorage.setItem('pg_seat_'+me.code,K(me.seat));}catch(e){}
       startHB();
       return;
@@ -1656,7 +1662,7 @@ function applyDoc(raw){
       MP=null;render();return;
     }
     const bank=raw.bank||{};
-    me.ref.update({seats:{[K(me.seat)]:true},seen:{[K(me.seat)]:Date.now()},bank:{[K(me.seat)]:nn(bank[K(me.seat)],1000)}}).catch(mpErr);
+    me.ref.update({seats:{[K(me.seat)]:true},names:{[K(me.seat)]:me.name},seen:{[K(me.seat)]:Date.now()},bank:{[K(me.seat)]:me.pBank}}).catch(mpErr);
     try{localStorage.setItem('pg_seat_'+me.code,K(me.seat));}catch(e){}
     startHB();
     return;
@@ -1764,6 +1770,8 @@ function mpOpen(){
   render();
 }
 /* 庄家：所有闲家都开牌后，逐人与庄家比较，统一写入结果和筹码（只由庄家写一次） */
+/* 名字转成数据库文档名（去掉不能用的符号） */
+function pidOf(n){return String(n).trim().slice(0,12).replace(/[\/\\.#$\[\]]/g,'_')||'guest';}
 function mpSettle(){
   const me=MP; if(!me||!me.iAmDealer)return;
   const d=me.doc; if(!d||d.stage!=='arrange'||!allOpened(d)||!dealerOpened(d)){me.settling=false;return;}
@@ -1788,6 +1796,9 @@ function mpSettle(){
   bank[K(dealer)]=nn(bank[K(dealer)],1000)+dealerDelta;
   res[K(dealer)]={fw:false,bw:false,delta:dealerDelta};
   me.ref.update({stage:'result',res,bank}).catch(mpErr);
+  /* 筹码按名字保存：庄家结算后把每位玩家的筹码写到自己名字下面 */
+  const names=d.names||{};
+  for(const k of Object.keys(bank)){const nmk=names[k]; if(nmk){try{DB.collection('players').doc(pidOf(nmk)).set({name:nmk,bank:bank[k],updated:Date.now()},{merge:true}).catch(()=>{});}catch(e){}}}
 }
 /* 庄家：下一局，庄家顺时针交给下一位入座的人 */
 function mpNext(){
@@ -2030,6 +2041,7 @@ const DBP=(async()=>{
   mpStatus(idleStatus());
   return DB;
 })();
+try{const sv=localStorage.getItem('pg_name'); const ni=document.getElementById('pName'); if(sv&&ni)ni.value=sv;}catch(e){}
 const hashCode=(location.hash||'').slice(1).toLowerCase();
 if(CODE_RE2.test(hashCode))$('#mpCode').value=hashCode;
 
