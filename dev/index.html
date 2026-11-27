@@ -1791,7 +1791,8 @@ function mpSettle(){
     res[K(s)]={fw,bw,delta};
   }
   /* 6.14：庄家净收入扣 5% 佣金（归赌场），输家付出的全额进入庄家净额 */
-  const net=lossSum-winSum, comm=net>0?Math.floor(net*0.05):0;
+  /* v117（改）：佣金不取整：净收入的 5%（如输 50 则庄家得 47.5） */
+  const net=lossSum-winSum, comm=net>0?net*0.05:0;
   dealerDelta=net-comm;
   bank[K(dealer)]=nn(bank[K(dealer)],1000)+dealerDelta;
   res[K(dealer)]={fw:false,bw:false,delta:dealerDelta};
