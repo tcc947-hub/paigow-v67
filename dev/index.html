@@ -1765,7 +1765,7 @@ function writeDeal(faces){
   /* v117（改）：庄家自己理牌：先给庄家一叠 4 张（pool），庄家像闲家一样分成两墩后开牌 */
   const hands={[K(dealer)]:{pool:deck.slice(4*j0,4*j0+4).map(enc),front:[],back:[],valid:true,opened:false}};
   dealt.forEach(s=>{const j=slots[K(s)];hands[K(s)]={pool:deck.slice(4*j,4*j+4).map(enc),front:[],back:[],opened:false};});
-  const body={round:d.round||0,dealer,stage:'arrange',deck:deck.map(enc),dealt,slots,dice:{id:me.diceId,faces},hands,res:{},seats:d.seats||{},seen:d.seen||{},bank:d.bank||{}};
+  const body={round:d.round||0,dealer,stage:'arrange',deck:deck.map(enc),dealt,slots,dice:{id:me.diceId,faces},hands,res:{},seats:d.seats||{},seen:d.seen||{},bank:d.bank||{},names:d.names||{},held:d.held||1};
   S.deck=null;S.swapSel=-1;S.phase='arrange';S.pool=[];S.front=[];S.back=[];
   me.ref.set(body).catch(mpErr);
   render();
